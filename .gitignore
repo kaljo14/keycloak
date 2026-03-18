@@ -17,3 +17,4 @@ keycloak_data/
 
 # Scripts with hardcoded credentials - keep local only
 create-secrets.sh
+create-docker-secret.sh
