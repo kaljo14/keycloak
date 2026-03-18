@@ -1,0 +1,36 @@
+# Values for bitnami/keycloak Helm Chart
+# Prerequisites:
+#   1. ./create-secrets.sh (Update this script to include keycloak-admin-secret!)
+# Install with: helm install keycloak bitnami/keycloak -f k3s-keycloak-values.yaml
+
+# 1. Configure Admin Credentials (Securely)
+auth:
+  adminUser: user
+  # Load admin password from a secret
+  existingSecret: "keycloak-admin-secret"
+  existingSecretPasswordKey: "admin-password"
+
+# 2. Connect to External Database (Our Postgres Service)
+postgresql:
+  enabled: false # Disable the bundled Postgres
+
+externalDatabase:
+  host: "postgres-postgresql" # Service name of your Postgres
+  port: 5432
+  user: "keycloak"
+  database: "keycloak"
+  # Load DB password from the SAME secret we created for Postgres
+  existingSecret: "postgres-auth-secret"
+  existingSecretPasswordKey: "password"
+
+# 3. Expose Keycloak
+service:
+  type: LoadBalancer # Or NodePort if you don't have a LoadBalancer
+  ports:
+    http: 80
+  # nodePorts:
+  #   http: 30080
+
+# 4. Production Settings (Optional but recommended)
+production: true
+proxy: edge # If you are behind a reverse proxy/ingress

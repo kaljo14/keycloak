@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-ingress
+  annotations:
+    # Traefik is the default ingress controller in k3s
+    kubernetes.io/ingress.class: traefik
+    # Optional: Enable TLS if you have cert-manager configured
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  rules:
+    - host: keycloak.mustaci.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 80
+  # TLS Configuration (Uncomment if you have certs)
+  # tls:
+  #   - hosts:
+  #       - keycloak.mustaci.com
+  #     secretName: keycloak-tls

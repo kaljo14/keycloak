@@ -1,0 +1,66 @@
+# Values for bitnami/postgresql Helm Chart
+# Prerequisites:
+#   1. helm repo add bitnami https://charts.bitnami.com/bitnami
+#   2. helm repo update
+#   3. ./create-secrets.sh (MUST create secrets first!)
+# Install with: helm install postgres bitnami/postgresql -f k3s-postgres-values.yaml
+
+# Pin the version to avoid "Rolling tag" warnings and unexpected upgrades
+image:
+  tag: "16.1.0"
+
+global:
+  storageClass: "local-path" # Default for k3s. Change if you use Longhorn or others.
+
+auth:
+  username: "keycloak"
+  database: "keycloak"
+  # LOADED FROM SECRET: postgres-auth-secret
+  # The secret must contain keys: 'password' and 'postgres-password'
+  existingSecret: "postgres-auth-secret"
+  # password: "password"       # REMOVED (Moved to Secret)
+  # postgresPassword: "adminpassword" # REMOVED (Moved to Secret)
+
+primary:
+  # Persistence settings to ensure data is saved to disk
+  persistence:
+    enabled: true
+    size: 3Gi
+    accessModes:
+      - ReadWriteOnce
+  
+  # Resource limits to prevent Postgres from eating all cluster RAM
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+  # Initdb scripts to create additional databases automatically on first startup
+  # LOADED FROM SECRET: postgres-init-scripts
+  initdb:
+    scriptsSecret: "postgres-init-scripts"
+    # scripts:
+    #   init.sql: |
+    #     -- MOVED TO init.sql (and loaded via Secret)
+
+# Backup configuration
+# To enable this, you need a separate volume to store the backup files.
+backup:
+  enabled: false # Set to true to enable
+  cronjob:
+    schedule: "@daily" # Run once a day
+    storage:
+      enabled: true
+      size: 1Gi
+      accessModes:
+        - ReadWriteOnce
+      # If you want to keep backups even after uninstalling the chart:
+      # annotations:
+      #   helm.sh/resource-policy: keep
+  # Number of backups to keep
+  retentionPolicy:
+    enabled: true
+    keepDaily: 7

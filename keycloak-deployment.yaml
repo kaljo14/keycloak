@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      imagePullSecrets:
+        - name: docker-hub-secret
+      containers:
+        - name: keycloak
+          image: kaljo14/keycloak-auth:latest
+          imagePullPolicy: Always # Pull from registry
+          args: ["start", "--import-realm"]
+          env:
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://postgres-postgresql:5432/keycloak"
+            - name: KC_DB_USERNAME
+              value: "keycloak"
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth-secret
+                  key: password
+            - name: KEYCLOAK_ADMIN
+              value: "admin" # Or load from secret if you want to be super secure
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin-secret
+                  key: admin-password
+            - name: KC_HTTP_PORT
+              value: "8080"
+            # PRODUCTION SETTING: Hostname
+            # Force the full URL to ensure HTTPS is used in generated links
+            - name: KC_HOSTNAME_URL
+              value: "https://keycloak.mustaci.com"
+            - name: KC_HOSTNAME_ADMIN_URL
+              value: "https://keycloak.mustaci.com"
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+            - name: KC_HOSTNAME_STRICT_HTTPS
+              value: "false"  # Disable strict check, rely on Proxy headers and explicit URLs
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_PROXY
+              value: "edge"
+          ports:
+            - name: http
+              containerPort: 8080
+          # Resource limits for Production
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          # Probes for Self-Healing
+          readinessProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30  # Allow 5 minutes for startup (60s + 30*10s)
+          livenessProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 120  # Wait 2 minutes before first check
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5  # Allow 2.5 more minutes before restart

@@ -1,0 +1,19 @@
+# Docker volumes
+postgres_data/
+keycloak_data/
+
+# System files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Scripts with hardcoded credentials - keep local only
+create-secrets.sh
